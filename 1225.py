@@ -35,5 +35,5 @@ for i in range(8):
     res.append(model.evaluate(s1[20000:,:,:,i].reshape((-1,32,32,1)),labels[20000:]))
     models.append(model)
 
-
+print('test')
 exit()
