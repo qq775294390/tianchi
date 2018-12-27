@@ -107,5 +107,4 @@ for i in range(10):
 
         model.fit(x=[s1,s2],y=labels,epochs=1,batch_size=64)
         acc.append( model.evaluate(x=[s1[:20000],s2[:20000]],y=labels[:20000]) )
-print 1
 exit()
