@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from tensorflow import keras
+import gc
 
 res_size=[(64,64,256),(128,128,512),(256,256,1024),(512,512,2048)]
 L=[3,4,6,2]
@@ -41,6 +42,7 @@ for i in range(4):
         X = keras.layers.Add()([X,X_short])
         X = keras.layers.Activation('relu')(X)
 
+
         out = keras.layers.AveragePooling2D((2, 2))(X)
         out = keras.layers.Flatten()(out)
         out = keras.layers.Dense(64,activation='relu')(out)
@@ -56,15 +58,19 @@ L_out=keras.layers.Dense(17,activation='softmax')(X)
 model=keras.models.Model(inputs=[L_input1,L_input2],outputs=L_out)
 model.compile(loss='categorical_crossentropy', optimizer='sgd',metrics=['accuracy'])
 
-fid = h5py.File('validation.h5', 'r')
+fid = h5py.File('training.h5', 'r')
 
 step=25000
-
+length = len(fid['sen1'])
 res = []
+s1,s2,labels=None,None,None
 for mm in models:
 
-    for i in range(len(fid) / step):
+    for i in range(length / step):
         # Loading sentinel-1 data patches
+
+        del s1,s2,labels
+        gc.collect()
         s1 = np.array(fid['sen1'][0 * i:0 * i + step])
         # Loading sentinel-2 data patches
         s2 = np.array(fid['sen2'][0 * i:0 * i + step])
@@ -75,11 +81,20 @@ for mm in models:
 
         mm.fit(x=[s1[:20000],s2[:20000]],y=labels[:20000],epochs=2,batch_size=64)
 
-    res.append( mm.evaluate(x=[s1[:20000],s2[:20000]],y=labels[:20000]) )
+        res.append( mm.evaluate(x=[s1[:20000],s2[:20000]],y=labels[:20000]) )
 
-
+acc=[]
 for i in range(10):
-    model.fit(x=[s1,s2],y=labels,epochs=1,batch_size=64)
-    model.save('resnet_model'+str(i))
+
+    for i in range(length / step):
+        # Loading sentinel-1 data patches
+        s1 = np.array(fid['sen1'][0 * i:0 * i + step])
+        # Loading sentinel-2 data patches
+        s2 = np.array(fid['sen2'][0 * i:0 * i + step])
+        # Loading labels
+        labels = np.array(fid['label'][0 * i:0 * i + step])
+
+        model.fit(x=[s1,s2],y=labels,epochs=1,batch_size=64)
+        acc.append( model.evaluate(x=[s1[:20000],s2[:20000]],y=labels[:20000]) )
 
 exit()
