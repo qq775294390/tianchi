@@ -26,7 +26,13 @@ models=[]
 
 
 for i in range(4):
+
+    print(i)
+
     for j in range(L[i]):
+
+        print((i,j))
+
         key=res_size[i]
         if j==0:
             X_short = keras.layers.Conv2D(key[2],(1,1),activation='relu',padding='same')(X)
@@ -71,6 +77,7 @@ for mm in models:
 
         del s1,s2,labels
         gc.collect()
+        print ('loading')
         s1 = np.array(fid['sen1'][0 * i:0 * i + step])
         # Loading sentinel-2 data patches
         s2 = np.array(fid['sen2'][0 * i:0 * i + step])
@@ -80,8 +87,12 @@ for mm in models:
 
 
         mm.fit(x=[s1[:20000],s2[:20000]],y=labels[:20000],epochs=2,batch_size=64)
+        temp=mm.evaluate(x=[s1[:20000],s2[:20000]],y=labels[:20000])
 
-        res.append( mm.evaluate(x=[s1[:20000],s2[:20000]],y=labels[:20000]) )
+        print('')
+        print('---------------------------------------')
+        print(temp)
+        res.append( temp )
 
 acc=[]
 for i in range(10):
