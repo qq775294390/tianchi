@@ -21,6 +21,9 @@ X=keras.layers.Conv2D(64,(3,3),activation='relu',padding='same')(X)
 X=keras.layers.BatchNormalization(axis=-1)(X)
 X=keras.layers.MaxPool2D((2,2))(X)
 
+models=[]
+
+
 for i in range(4):
     for j in range(L[i]):
         key=res_size[i]
@@ -37,6 +40,15 @@ for i in range(4):
         X = keras.layers.BatchNormalization()(X)
         X = keras.layers.Add()([X,X_short])
         X = keras.layers.Activation('relu')(X)
+
+        out = keras.layers.AveragePooling2D((2, 2))(X)
+        out = keras.layers.Flatten()(out)
+        out = keras.layers.Dense(64,activation='relu')(out)
+        out = keras.layers.Dense(17,activation='softmax')(out)
+        model = keras.models.Model(inputs=[L_input1, L_input2], outputs=out)
+        model.compile(loss='categorical_crossentropy', optimizer='sgd', metrics=['accuracy'])
+        models.append(model)
+
 X=keras.layers.AveragePooling2D((2,2))(X)
 X=keras.layers.Flatten()(X)
 L_out=keras.layers.Dense(17,activation='softmax')(X)
@@ -44,16 +56,30 @@ L_out=keras.layers.Dense(17,activation='softmax')(X)
 model=keras.models.Model(inputs=[L_input1,L_input2],outputs=L_out)
 model.compile(loss='categorical_crossentropy', optimizer='sgd',metrics=['accuracy'])
 
-fid = h5py.File('training.h5', 'r')
-# Loading sentinel-1 data patches
-s1 = np.array(fid['sen1'])
-# Loading sentinel-2 data patches
-s2 = np.array(fid['sen2'])
-# Loading labels
-labels = np.array(fid['label'])
+fid = h5py.File('validation.h5', 'r')
+
+step=25000
+
+res = []
+for mm in models:
+
+    for i in range(len(fid) / step):
+        # Loading sentinel-1 data patches
+        s1 = np.array(fid['sen1'][0 * i:0 * i + step])
+        # Loading sentinel-2 data patches
+        s2 = np.array(fid['sen2'][0 * i:0 * i + step])
+        # Loading labels
+        labels = np.array(fid['label'][0 * i:0 * i + step])
+
+
+
+        mm.fit(x=[s1[:20000],s2[:20000]],y=labels[:20000],epochs=2,batch_size=64)
+
+    res.append( mm.evaluate(x=[s1[:20000],s2[:20000]],y=labels[:20000]) )
+
 
 for i in range(10):
     model.fit(x=[s1,s2],y=labels,epochs=1,batch_size=64)
-    model.save('model'+str(i))
+    model.save('resnet_model'+str(i))
 
 exit()
