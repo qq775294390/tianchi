@@ -102,7 +102,8 @@ for mm in models:
             print(temp)
             print(temp0)
     if is_val:
-        temp=mm.evaluate(x=[s1_val,s2_val],y=labels_val)
+        mm.fit(x=[s1_val[:20000],s2_val[:20000]],y=labels_val[:20000],epochs=1,batch_size=64)
+        temp=mm.evaluate(x=[s1_val[20000:],s2_val[20000:]],y=labels_val[20000:])
         print('')
         print('---------------------------------------')
         print(temp)
@@ -125,6 +126,10 @@ for i in range(10):
         labels = np.array(fid_train['label'][start_point:end_point])
 
         model.fit(x=[s1,s2],y=labels,epochs=1,batch_size=64)
+        if is_val:
+            model.fit(x=[s1_val[:20000], s2_val[:20000]], y=labels_val[:20000], epochs=1, batch_size=64)
+            print('*********************************')
+            print(model.evaluate(x=[s1_val[20000:],s2_val[20000:]],y=labels_val[20000:]))
     if is_val:
         acc.append( model.evaluate(x=[s1_val,s2_val],y=labels_val) )
     model.save(str(i)+'-epoch')
