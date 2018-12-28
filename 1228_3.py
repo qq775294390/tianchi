@@ -23,4 +23,5 @@ print(model.evaluate([s1[:20000],s2[:20000]],labels[:20000]))
 
 print( model.evaluate([s1[20000:],s2[20000:]],labels[20000:]) )
 
+print('')
 exit()
