@@ -49,12 +49,12 @@ for i in range(4):
         X = keras.layers.Activation('relu')(X)
 
 
-        out = keras.layers.AveragePooling2D((2, 2))(X)
+        out = keras.layers.MaxPooling2D((2, 2))(X)
+        out = keras.layers.Conv2D(12,1,activation='relu')(out)
         out = keras.layers.Flatten()(out)
-        out = keras.layers.Dense(64,activation='relu')(out)
         out = keras.layers.Dense(17,activation='softmax')(out)
         model = keras.models.Model(inputs=[L_input1, L_input2], outputs=out)
-        model.compile(loss='categorical_crossentropy', optimizer='sgd', metrics=['accuracy'])
+        model.compile(loss='categorical_crossentropy', optimizer='sgd', metrics=['acc'])
         models.append(model)
 
 X=keras.layers.AveragePooling2D((2,2))(X)
@@ -62,12 +62,14 @@ X=keras.layers.Flatten()(X)
 L_out=keras.layers.Dense(17,activation='softmax')(X)
 
 model=keras.models.Model(inputs=[L_input1,L_input2],outputs=L_out)
-model.compile(loss='categorical_crossentropy', optimizer='sgd',metrics=['accuracy'])
+model.compile(loss='categorical_crossentropy', optimizer='sgd',metrics=['acc'])
 
-fid = h5py.File('training.h5', 'r')
+fid = h5py.File('validation.h5', 'r')
 
-step=25000
+
 length = len(fid['sen1'])
+step=length
+
 res = []
 s1,s2,labels=None,None,None
 for mm in models:
@@ -86,8 +88,8 @@ for mm in models:
 
 
 
-        mm.fit(x=[s1[:20000],s2[:20000]],y=labels[:20000],epochs=2,batch_size=64)
-        temp=mm.evaluate(x=[s1[:20000],s2[:20000]],y=labels[:20000])
+        mm.fit(x=[s1[:20000],s2[:20000]],y=labels[:20000],epochs=1,batch_size=64,shuffle=False)
+        temp=mm.evaluate(x=[s1[20000:],s2[20000:]],y=labels[20000:])
 
         print('')
         print('---------------------------------------')

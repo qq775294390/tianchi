@@ -1,44 +1,112 @@
 import sys
 reload(sys)
 sys.setdefaultencoding('utf8')
+import h5py
+from PIL import Image
+import matplotlib.pyplot as plt
 import numpy as np
-import tensorflow as tf
-import keras
-from keras import layers
-from keras.layers import Input,Add,Dense,Activation,ZeroPadding2D,\
-    BatchNormalization,Flatten,Conv2D,AveragePooling2D,MaxPooling2D,GlobalMaxPooling2D
-from keras.models import Model,load_model
-from keras.preprocessing import image
-from keras.utils import layer_utils
-from keras.utils.data_utils import get_file
-from keras.applications.imagenet_utils import preprocess_input
-from keras.utils.vis_utils import model_to_dot
-from keras.utils import plot_model
-from keras.initializers import glorot_uniform
-import pydoc
-import scipy.misc
-from matplotlib.pyplot import imshow
-import keras.backend as K
-K.set_image_data_format("channels_last")
-K.set_learning_phase(1)
-def identity_block(X,f,filters,stage,block):
-    conv_name_base = "res"+str(stage)+block+"_branch"
-    bn_name_base = "bn"+str(stage)+block+"_branch"
-    F1,F2,F3 = filters
-    X_shortcut = X
+import pandas as pd
+from tensorflow import keras
+import gc
 
-    X = Conv2D(filters=F1,kernel_size=(1,1),strides=(1,1),padding="same",activation='relu')(X)
+res_size=[(64,64,256),(128,128,512),(256,256,1024),(512,512,2048)]
+L=[3,4,6,2]
+
+L_input1=keras.layers.Input((32,32,8))
+L_input2=keras.layers.Input((32,32,10))
+
+X=keras.layers.Concatenate()([L_input1,L_input2])
 
 
-    X = Conv2D(filters=F2,kernel_size=(f,f),strides=(1,1),padding="same",
-               name=conv_name_base+"2b",kernel_initializer=glorot_uniform(seed=0),activation='relu')(X)
+X=keras.layers.Conv2D(64,(3,3),activation='relu',padding='same')(X)
+X=keras.layers.BatchNormalization(axis=-1)(X)
+X=keras.layers.MaxPool2D((2,2))(X)
 
-    X = Conv2D(filters=F3,kernel_size=(1,1),strides=(1,1),padding="same",
-               name=conv_name_base+"2c",kernel_initializer=glorot_uniform(seed=0))(X)
+models=[]
 
-    X = layers.add([X,X_shortcut])
 
-    model=keras.models.Model(input=X_shortcut,outputs=X)
-    return X
-A_prev=Input((32,32,2))
-A = identity_block(A_prev,f=2,filters=[2,4,6],stage=1,block="a")
+for i in range(1):
+
+    print(i)
+
+    for j in range(1):
+
+        print((i,j))
+
+        key=res_size[i]
+        if j==0:
+            X_short = keras.layers.Conv2D(key[2],(1,1),activation='relu',padding='same')(X)
+            X_short = keras.layers.BatchNormalization()(X_short)
+        else:
+            X_short = X
+        X = keras.layers.Conv2D(key[0],(1,1),activation='relu',padding='same')(X)
+        X = keras.layers.BatchNormalization()(X)
+        X = keras.layers.Conv2D(key[1], (3, 3), activation='relu',padding='same')(X)
+        X = keras.layers.BatchNormalization()(X)
+        X = keras.layers.Conv2D(key[2], (3, 3), activation='relu', padding='same')(X)
+        X = keras.layers.BatchNormalization()(X)
+        X = keras.layers.Add()([X,X_short])
+        X = keras.layers.Activation('relu')(X)
+
+
+        out = keras.layers.MaxPooling2D((2, 2))(X)
+        out = keras.layers.Conv2D(12,1,activation='relu')(out)
+        out = keras.layers.Flatten()(out)
+        out = keras.layers.Dense(17,activation='softmax')(out)
+        model = keras.models.Model(inputs=[L_input1, L_input2], outputs=out)
+        model.compile(loss='categorical_crossentropy', optimizer='sgd', metrics=['acc'])
+        models.append(model)
+
+# X=keras.layers.AveragePooling2D((2,2))(X)
+# X=keras.layers.Flatten()(X)
+# L_out=keras.layers.Dense(17,activation='softmax')(X)
+#
+# model=keras.models.Model(inputs=[L_input1,L_input2],outputs=L_out)
+# model.compile(loss='categorical_crossentropy', optimizer='sgd',metrics=['acc'])
+
+fid = h5py.File('validation.h5', 'r')
+
+
+length = len(fid['sen1'])
+step=length
+
+res = []
+s1,s2,labels=None,None,None
+for mm in models:
+
+    for i in range(length / step):
+        # Loading sentinel-1 data patches
+
+        del s1,s2,labels
+        gc.collect()
+        print ('loading')
+        s1 = np.array(fid['sen1'][0 * i:0 * i + step])
+        # Loading sentinel-2 data patches
+        s2 = np.array(fid['sen2'][0 * i:0 * i + step])
+        # Loading labels
+        labels = np.array(fid['label'][0 * i:0 * i + step])
+
+
+
+        mm.fit(x=[s1[:20000],s2[:20000]],y=labels[:20000],epochs=1,batch_size=64,shuffle=False)
+        temp=mm.evaluate(x=[s1[20000:],s2[20000:]],y=labels[20000:])
+
+        print('')
+        print('---------------------------------------')
+        print(temp)
+        res.append( temp )
+
+acc=[]
+for i in range(10):
+
+    for i in range(length / step):
+        # Loading sentinel-1 data patches
+        s1 = np.array(fid['sen1'][0 * i:0 * i + step])
+        # Loading sentinel-2 data patches
+        s2 = np.array(fid['sen2'][0 * i:0 * i + step])
+        # Loading labels
+        labels = np.array(fid['label'][0 * i:0 * i + step])
+
+        model.fit(x=[s1,s2],y=labels,epochs=1,batch_size=64)
+        acc.append( model.evaluate(x=[s1[:20000],s2[:20000]],y=labels[:20000]) )
+exit()
