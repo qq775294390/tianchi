@@ -16,8 +16,12 @@ s1 = np.array(fid['sen1'])
 s2 = np.array(fid['sen2'])
 # Loading labels
 labels = np.array(fid['label'])
+for i in range(10):
+    print(model.evaluate([s1[:20000],s2[:20000]],labels[:20000]))
 
-model.fit([s1[:20000],s2[:20000]],labels[:20000])
+    print( model.evaluate([s1[20000:],s2[20000:]],labels[20000:]) )
+
+    model.fit([s1[:20000],s2[:20000]],labels[:20000])
 
 print(model.evaluate([s1[:20000],s2[:20000]],labels[:20000]))
 
