@@ -51,7 +51,7 @@ for i in range(4):
 
         out = keras.layers.AveragePooling2D((2, 2))(X)
         out = keras.layers.Flatten()(out)
-        out = keras.layers.Dropout(0.3)(X)
+        out = keras.layers.Dropout(0.3)(out)
         out = keras.layers.Dense(64,activation='relu')(out)
         out = keras.layers.Dense(17,activation='softmax')(out)
         model = keras.models.Model(inputs=[L_input1, L_input2], outputs=out)
