@@ -48,7 +48,6 @@ for i in range(4):
         X = keras.layers.Add()([X,X_short])
         X = keras.layers.Activation('relu')(X)
 
-
         out = keras.layers.AveragePooling2D((2, 2))(X)
         out = keras.layers.Flatten()(out)
         out = keras.layers.Dropout(0.3)(out)
