@@ -51,6 +51,7 @@ for i in range(4):
 
         out = keras.layers.AveragePooling2D((2, 2))(X)
         out = keras.layers.Flatten()(out)
+        out = keras.layers.Dropout(0.3)(X)
         out = keras.layers.Dense(64,activation='relu')(out)
         out = keras.layers.Dense(17,activation='softmax')(out)
         model = keras.models.Model(inputs=[L_input1, L_input2], outputs=out)
@@ -59,6 +60,8 @@ for i in range(4):
 
 X=keras.layers.AveragePooling2D((2,2))(X)
 X=keras.layers.Flatten()(X)
+X=keras.layers.Dropout(0.3)(X)
+X=keras.layers.Dense(64,activation='relu')(X)
 L_out=keras.layers.Dense(17,activation='softmax')(X)
 
 model=keras.models.Model(inputs=[L_input1,L_input2],outputs=L_out)
@@ -75,10 +78,13 @@ if is_val:
     s2_val = fid_val['sen2']
     labels_val = fid_val['label']
 layers = 0
-for mm in models:
-
+for j in range(len(models)):
+    mm=models[j]
     for i in range(int(length / step)):
         # Loading sentinel-1 data patches
+
+        print((j,i))
+
         start_point = i*step
         if i+1 == int(length/step):
             end_point = length
@@ -106,11 +112,12 @@ for mm in models:
         temp=mm.evaluate(x=[s1_val[20000:],s2_val[20000:]],y=labels_val[20000:])
         print('')
         print('---------------------------------------')
+        print(mm.evaluate(x=[s1_val[:20000],s2_val[:20000]],y=labels_val[:20000]))
         print(temp)
         res.append( temp )
-    mm.save(str(layers)+'-models')
+    mm.save(str(j)+str(temp[1])+'-models')
 acc=[]
-for i in range(10):
+for j in range(10):
 
     for i in range(int(length / step)):
         start_point = i*step
@@ -129,8 +136,12 @@ for i in range(10):
         if is_val:
             model.fit(x=[s1_val[:20000], s2_val[:20000]], y=labels_val[:20000], epochs=1, batch_size=64)
             print('*********************************')
-            print(model.evaluate(x=[s1_val[20000:],s2_val[20000:]],y=labels_val[20000:]))
+            temp= model.evaluate(x=[s1_val[20000:],s2_val[20000:]],y=labels_val[20000:])
+            print(model.evaluate(x=[s1_val[:20000], s2_val[:20000]], y=labels_val[:20000]))
+            print(temp)
+            print('*********************************')
+            model.save(str((j,i))+str(temp[1]) + '-epoch')
     if is_val:
         acc.append( model.evaluate(x=[s1_val,s2_val],y=labels_val) )
-    model.save(str(i)+'-epoch')
+
 exit()
