@@ -18,7 +18,7 @@ model=keras.models.load_model('total')
 pre=model.predict([s1[:,:,:,i].reshape((-1,32,32,1))for i in range(8)]
                    +[s2[:,:,:,i].reshape((-1,32,32,1)) for i in range(10)]
                    )
-
+np.savetxt('zz.txt',pre)
 res=np.zeros(pre.shape,dtype=np.int)
 for i in range(len(res)):
     res[i][pre[i].argmax()]=1
