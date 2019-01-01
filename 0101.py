@@ -9,6 +9,7 @@ import pandas as pd
 from tensorflow import keras
 import gc
 
+
 model=keras.models.load_model('')
 model.compile(loss='categorical_crossentropy', optimizer='sgd',metrics=['accuracy'])
 fid_train = h5py.File('../training.h5', 'r')
